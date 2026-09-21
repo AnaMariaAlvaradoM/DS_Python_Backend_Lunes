@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patitas Vet</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --secondary: #0f172a;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--secondary);
+      padding: 24px;
+    }
+
+    h1, h2 { margin-top: 0; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    form { display: flex; flex-direction: column; gap: 10px; }
+    input, button, select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; }
+    button { background: var(--primary); color: white; cursor: pointer; border: none; }
+    button:hover { background: #1d4ed8; }
+    ul { padding-left: 18px; }
+    li { margin-bottom: 8px; }
+    .status { margin-top: 10px; color: #0f766e; font-size: 14px; }
+    .error { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Patitas Vet</h1>
+    <p>Panel simple para probar la API de dueños, mascotas y veterinarios.</p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Dueños</h2>
+        <form id="dueno-form">
+          <input type="text" id="dueno-nombre" placeholder="Nombre" required />
+          <input type="text" id="dueno-telefono" placeholder="Teléfono" required />
+          <input type="email" id="dueno-email" placeholder="Correo" required />
+          <button type="submit">Guardar dueño</button>
+        </form>
+        <div id="dueno-status" class="status"></div>
+        <ul id="duenos-list"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Mascotas</h2>
+        <form id="mascota-form">
+          <input type="text" id="mascota-nombre" placeholder="Nombre de la mascota" required />
+          <input type="text" id="mascota-especie" placeholder="Especie" required />
+          <input type="text" id="mascota-raza" placeholder="Raza" />
+          <input type="date" id="mascota-fecha" />
+          <select id="mascota-dueno"></select>
+          <button type="submit">Guardar mascota</button>
+        </form>
+        <div id="mascota-status" class="status"></div>
+        <ul id="mascotas-list"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Veterinarios</h2>
+        <form id="veterinario-form">
+          <input type="text" id="veterinario-nombre" placeholder="Nombre" required />
+          <input type="text" id="veterinario-especialidad" placeholder="Especialidad" required />
+          <button type="submit">Guardar veterinario</button>
+        </form>
+        <div id="veterinario-status" class="status"></div>
+        <ul id="veterinarios-list"></ul>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const duenoForm = document.getElementById('dueno-form');
+    const mascotaForm = document.getElementById('mascota-form');
+    const veterinarioForm = document.getElementById('veterinario-form');
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, options);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.detail || 'Error en la solicitud');
+      }
+      return data;
+    }
+
+    function setStatus(element, message, isError = false) {
+      element.textContent = message;
+      element.className = `status ${isError ? 'error' : ''}`;
+    }
+
+    async function cargarDueños() {
+      try {
+        const dueños = await api('/duenos');
+        const lista = document.getElementById('duenos-list');
+        const select = document.getElementById('mascota-dueno');
+        lista.innerHTML = '';
+        select.innerHTML = '<option value="">Seleccione un dueño</option>';
+
+        dueños.forEach((dueno) => {
+          const item = document.createElement('li');
+          item.textContent = `${dueno.nombre} - ${dueno.telefono} - ${dueno.email}`;
+          lista.appendChild(item);
+
+          const option = document.createElement('option');
+          option.value = dueno.id;
+          option.textContent = dueno.nombre;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        setStatus(document.getElementById('dueno-status'), error.message, true);
+      }
+    }
+
+    async function cargarMascotas() {
+      try {
+        const mascotas = await api('/mascotas');
+        const lista = document.getElementById('mascotas-list');
+        lista.innerHTML = '';
+
+        mascotas.forEach((mascota) => {
+          const item = document.createElement('li');
+          const fecha = mascota.fecha_nacimiento ? mascota.fecha_nacimiento : 'Sin fecha';
+          item.textContent = `${mascota.nombre} (${mascota.especie}) - Raza: ${mascota.raza || 'N/A'} - Dueño ID: ${mascota.dueno_id} - Nac.: ${fecha}`;
+          lista.appendChild(item);
+        });
+      } catch (error) {
+        setStatus(document.getElementById('mascota-status'), error.message, true);
+      }
+    }
+
+    async function cargarVeterinarios() {
+      try {
+        const veterinarios = await api('/veterinarios');
+        const lista = document.getElementById('veterinarios-list');
+        lista.innerHTML = '';
+
+        veterinarios.forEach((veterinario) => {
+          const item = document.createElement('li');
+          item.textContent = `${veterinario.nombre} - ${veterinario.especialidad}`;
+          lista.appendChild(item);
+        });
+      } catch (error) {
+        setStatus(document.getElementById('veterinario-status'), error.message, true);
+      }
+    }
+
+    duenoForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = {
+        nombre: document.getElementById('dueno-nombre').value,
+        telefono: document.getElementById('dueno-telefono').value,
+        email: document.getElementById('dueno-email').value,
+      };
+
+      try {
+        await api('/duenos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        setStatus(document.getElementById('dueno-status'), 'Dueño creado correctamente');
+        duenoForm.reset();
+        await cargarDueños();
+      } catch (error) {
+        setStatus(document.getElementById('dueno-status'), error.message, true);
+      }
+    });
+
+    mascotaForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = {
+        nombre: document.getElementById('mascota-nombre').value,
+        especie: document.getElementById('mascota-especie').value,
+        raza: document.getElementById('mascota-raza').value || null,
+        fecha_nacimiento: document.getElementById('mascota-fecha').value || null,
+        dueno_id: Number(document.getElementById('mascota-dueno').value)
+      };
+
+      try {
+        await api('/mascotas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        setStatus(document.getElementById('mascota-status'), 'Mascota creada correctamente');
+        mascotaForm.reset();
+        await cargarMascotas();
+      } catch (error) {
+        setStatus(document.getElementById('mascota-status'), error.message, true);
+      }
+    });
+
+    veterinarioForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = {
+        nombre: document.getElementById('veterinario-nombre').value,
+        especialidad: document.getElementById('veterinario-especialidad').value
+      };
+
+      try {
+        await api('/veterinarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        setStatus(document.getElementById('veterinario-status'), 'Veterinario creado correctamente');
+        veterinarioForm.reset();
+        await cargarVeterinarios();
+      } catch (error) {
+        setStatus(document.getElementById('veterinario-status'), error.message, true);
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await cargarDueños();
+      await cargarMascotas();
+      await cargarVeterinarios();
+    });
+  </script>
+</body>
+</html>

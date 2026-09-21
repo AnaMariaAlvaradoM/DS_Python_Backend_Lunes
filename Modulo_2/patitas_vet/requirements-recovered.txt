@@ -1,0 +1,2 @@
+# Recovered from the removed virtual environment on 2026-08-28.
+# Review direct dependencies before using this as a long-term lock file.

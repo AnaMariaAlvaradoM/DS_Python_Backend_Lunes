@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tienda_dev · Panel admin</title>
+<style>
+  :root{
+    --bg: #0d1117;
+    --panel: #12181f;
+    --panel-2: #171e27;
+    --border: #232b35;
+    --text: #d7dee6;
+    --text-dim: #7c8896;
+    --accent: #4fd1a5;
+    --accent-dim: #1f4d3d;
+    --danger: #e5677a;
+    --danger-dim: #3a2129;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size:14px;
+  }
+  .app{display:flex; min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{
+    width:220px; background:var(--panel); border-right:1px solid var(--border);
+    padding:20px 0; display:flex; flex-direction:column; flex-shrink:0;
+  }
+  .brand{padding:0 20px 20px; border-bottom:1px solid var(--border); margin-bottom:12px;}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:8px;box-shadow:0 0 8px var(--accent);}
+  .brand h1{font-size:15px; margin:0 0 4px; letter-spacing:.3px;}
+  .brand p{margin:0; font-size:11px; color:var(--text-dim); font-family:var(--mono);}
+  nav{display:flex; flex-direction:column; gap:2px; padding:0 10px;}
+  nav button{
+    all:unset; cursor:pointer; padding:10px 12px; border-radius:6px; font-size:13px;
+    color:var(--text-dim); display:flex; align-items:center; gap:10px;
+  }
+  nav button:hover{background:var(--panel-2); color:var(--text);}
+  nav button.active{background:var(--accent-dim); color:var(--accent);}
+  nav .icon{width:16px; text-align:center; font-family:var(--mono);}
+  .sidebar-foot{margin-top:auto; padding:14px 20px; font-size:11px; color:var(--text-dim); border-top:1px solid var(--border);}
+  #api-status{display:flex; align-items:center; gap:6px; margin-bottom:6px;}
+  #api-status .led{width:7px;height:7px;border-radius:50%; background:#555;}
+  #api-status .led.ok{background:var(--accent); box-shadow:0 0 6px var(--accent);}
+  #api-status .led.fail{background:var(--danger); box-shadow:0 0 6px var(--danger);}
+
+  /* Main */
+  main{flex:1; padding:28px 36px; max-width:1100px;}
+  .view{display:none;}
+  .view.active{display:block;}
+  .view-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px;}
+  .view-head h2{margin:0; font-size:19px;}
+  .view-head .count{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+
+  .panel{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:20px;}
+  .panel h3{margin:0 0 14px; font-size:12px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-dim);}
+  form{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:12px; align-items:end;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:11px; color:var(--text-dim);}
+  input, select{
+    background:var(--bg); border:1px solid var(--border); border-radius:5px; color:var(--text);
+    padding:8px 10px; font-size:13px; font-family:inherit;
+  }
+  input:focus, select:focus{outline:none; border-color:var(--accent);}
+  .btn{
+    background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent);
+    padding:8px 16px; border-radius:5px; cursor:pointer; font-size:13px; font-weight:600;
+  }
+  .btn:hover{background:var(--accent); color:#062018;}
+  .btn.secondary{background:transparent; color:var(--text-dim); border-color:var(--border);}
+  .btn.secondary:hover{color:var(--text); border-color:var(--text-dim); background:transparent;}
+  .btn.danger-outline{background:transparent; border-color:var(--danger); color:var(--danger);}
+  .btn.danger-outline:hover{background:var(--danger); color:#2a0c12;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; color:var(--text-dim); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:.5px; padding:8px 10px; border-bottom:1px solid var(--border);}
+  td{padding:10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--panel-2);}
+  .actions{display:flex; gap:6px;}
+  .icon-btn{
+    all:unset; cursor:pointer; padding:5px 9px; border-radius:4px; font-size:12px;
+    color:var(--text-dim); border:1px solid var(--border);
+  }
+  .icon-btn:hover{color:var(--text); border-color:var(--text-dim);}
+  .icon-btn.del:hover{color:var(--danger); border-color:var(--danger);}
+  .empty{color:var(--text-dim); font-style:italic; padding:16px 10px;}
+  .toast{
+    position:fixed; bottom:20px; right:20px; padding:12px 16px; border-radius:6px;
+    font-size:13px; font-family:var(--mono); z-index:50; opacity:0; transform:translateY(8px);
+    transition:.25s; pointer-events:none; max-width:360px;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+  .toast.ok{background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent);}
+  .toast.err{background:var(--danger-dim); color:var(--danger); border:1px solid var(--danger);}
+  .config-note{font-size:11px; color:var(--text-dim); margin-top:10px; font-family:var(--mono); line-height:1.6;}
+  code{background:var(--panel-2); padding:1px 5px; border-radius:3px; font-family:var(--mono); color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <h1><span class="dot"></span>tienda_dev</h1>
+      <p>panel admin · CRUD test</p>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-view="categorias"><span class="icon">▤</span> Categorías</button>
+      <button class="nav-btn" data-view="productos"><span class="icon">▥</span> Productos</button>
+      <button class="nav-btn" data-view="proveedores"><span class="icon">▧</span> Proveedores</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div id="api-status"><span class="led" id="led"></span><span id="status-text">sin verificar</span></div>
+      API: <code id="api-base-display"></code>
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- CATEGORIAS -->
+    <section class="view active" id="view-categorias">
+      <div class="view-head"><h2>Categorías</h2><span class="count" id="count-categorias"></span></div>
+      <div class="panel">
+        <h3 id="cat-form-title">Nueva categoría</h3>
+        <form id="form-categoria">
+          <input type="hidden" id="cat-id">
+          <div class="field"><label>Nombre</label><input id="cat-nombre" required></div>
+          <div class="field"><label>Descripción</label><input id="cat-descripcion"></div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" type="submit" id="cat-submit-btn">Guardar</button>
+            <button class="btn secondary" type="button" id="cat-cancel-btn" style="display:none;">Cancelar</button>
+          </div>
+        </form>
+      </div>
+      <div class="panel">
+        <h3>Listado</h3>
+        <table>
+          <thead><tr><th>ID</th><th>Nombre</th><th>Descripción</th><th></th></tr></thead>
+          <tbody id="tbody-categorias"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PRODUCTOS -->
+    <section class="view" id="view-productos">
+      <div class="view-head"><h2>Productos</h2><span class="count" id="count-productos"></span></div>
+      <div class="panel">
+        <h3 id="prod-form-title">Nuevo producto</h3>
+        <form id="form-producto">
+          <input type="hidden" id="prod-id">
+          <div class="field"><label>Nombre</label><input id="prod-nombre" required></div>
+          <div class="field"><label>Precio</label><input id="prod-precio" type="number" step="0.01" required></div>
+          <div class="field"><label>Stock</label><input id="prod-stock" type="number" required></div>
+          <div class="field"><label>Categoría</label><select id="prod-categoria" required></select></div>
+          <div class="field"><label>Proveedor <span style="color:var(--text-dim)">(opcional)</span></label>
+            <select id="prod-proveedor"><option value="">— sin proveedor —</option></select>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" type="submit" id="prod-submit-btn">Guardar</button>
+            <button class="btn secondary" type="button" id="prod-cancel-btn" style="display:none;">Cancelar</button>
+          </div>
+        </form>
+      </div>
+      <div class="panel">
+        <h3>Listado</h3>
+        <table>
+          <thead><tr><th>ID</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Categoría</th><th>Proveedor</th><th></th></tr></thead>
+          <tbody id="tbody-productos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PROVEEDORES -->
+    <section class="view" id="view-proveedores">
+      <div class="view-head"><h2>Proveedores</h2><span class="count" id="count-proveedores"></span></div>
+      <div class="panel">
+        <h3 id="prov-form-title">Nuevo proveedor</h3>
+        <form id="form-proveedor">
+          <input type="hidden" id="prov-id">
+          <div class="field"><label>Nombre</label><input id="prov-nombre" required></div>
+          <div class="field"><label>Email</label><input id="prov-email" type="email"></div>
+          <div class="field"><label>Teléfono</label><input id="prov-telefono"></div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" type="submit" id="prov-submit-btn">Guardar</button>
+            <button class="btn secondary" type="button" id="prov-cancel-btn" style="display:none;">Cancelar</button>
+          </div>
+        </form>
+      </div>
+      <div class="panel">
+        <h3>Listado</h3>
+        <table>
+          <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th></th></tr></thead>
+          <tbody id="tbody-proveedores"></tbody>
+        </table>
+      </div>
+      <div class="config-note">
+        Endpoints asumidos — ajusta <code>CONFIG</code> al inicio del &lt;script&gt; si tus rutas son distintas.
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG — confirmado contra tus routers reales
+   (categoria_router.py, producto_router.py, proveedor_router.py):
+   sin slash final, PUT para actualizar, DELETE para eliminar.
+   Si cambias el prefix o agregas /api, ajusta solo aquí.
+============================================================ */
+const CONFIG = {
+  BASE_URL: "http://127.0.0.1:8000",
+  ENDPOINTS: {
+    categorias: "/categorias",
+    productos:  "/productos",
+    proveedores:"/proveedores",
+  }
+};
+document.getElementById('api-base-display').textContent = CONFIG.BASE_URL;
+
+/* ---------- helpers ---------- */
+function url(resource, id){
+  const base = CONFIG.BASE_URL + CONFIG.ENDPOINTS[resource];
+  return id !== undefined ? `${base}/${id}` : base;
+}
+
+async function api(method, resource, id, body){
+  const res = await fetch(url(resource, id), {
+    method,
+    headers: {'Content-Type':'application/json'},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if(!res.ok){
+    let detail = res.statusText;
+    try{ const j = await res.json(); detail = j.detail ? JSON.stringify(j.detail) : detail; }catch(e){}
+    throw new Error(`${method} ${resource} → ${res.status}: ${detail}`);
+  }
+  if(res.status === 204) return null;
+  return res.json();
+}
+
+function toast(msg, ok=true){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (ok ? 'ok' : 'err');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=> t.classList.remove('show'), 3500);
+}
+
+/* ---------- nav ---------- */
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.view).classList.add('active');
+  });
+});
+
+/* ---------- health check ---------- */
+async function checkApi(){
+  const led = document.getElementById('led');
+  const txt = document.getElementById('status-text');
+  try{
+    await fetch(CONFIG.BASE_URL + CONFIG.ENDPOINTS.categorias, {method:'GET'});
+    led.className = 'led ok'; txt.textContent = 'conectado';
+  }catch(e){
+    led.className = 'led fail'; txt.textContent = 'sin conexión';
+  }
+}
+
+/* ================= CATEGORIAS ================= */
+let categoriasCache = [];
+const catForm = document.getElementById('form-categoria');
+const catCancelBtn = document.getElementById('cat-cancel-btn');
+
+async function loadCategorias(){
+  try{
+    categoriasCache = await api('GET','categorias');
+    document.getElementById('count-categorias').textContent = categoriasCache.length + ' registro(s)';
+    const tbody = document.getElementById('tbody-categorias');
+    tbody.innerHTML = categoriasCache.length ? '' : '<tr><td colspan="4" class="empty">Sin categorías todavía.</td></tr>';
+    categoriasCache.forEach(c=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${c.id}</td><td>${c.nombre ?? ''}</td><td>${c.descripcion ?? ''}</td>
+        <td class="actions">
+          <button class="icon-btn" onclick="editCategoria(${c.id})">Editar</button>
+          <button class="icon-btn del" onclick="deleteCategoria(${c.id})">Eliminar</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    fillCategoriaSelect();
+  }catch(e){ toast(e.message, false); }
+}
+
+function editCategoria(id){
+  const c = categoriasCache.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('cat-id').value = c.id;
+  document.getElementById('cat-nombre').value = c.nombre ?? '';
+  document.getElementById('cat-descripcion').value = c.descripcion ?? '';
+  document.getElementById('cat-form-title').textContent = 'Editar categoría #' + id;
+  document.getElementById('cat-submit-btn').textContent = 'Actualizar';
+  catCancelBtn.style.display = 'inline-block';
+}
+
+function resetCatForm(){
+  catForm.reset();
+  document.getElementById('cat-id').value = '';
+  document.getElementById('cat-form-title').textContent = 'Nueva categoría';
+  document.getElementById('cat-submit-btn').textContent = 'Guardar';
+  catCancelBtn.style.display = 'none';
+}
+catCancelBtn.addEventListener('click', resetCatForm);
+
+catForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const id = document.getElementById('cat-id').value;
+  const payload = {
+    nombre: document.getElementById('cat-nombre').value,
+    descripcion: document.getElementById('cat-descripcion').value
+  };
+  try{
+    if(id){ await api('PUT','categorias', id, payload); toast('Categoría actualizada'); }
+    else{ await api('POST','categorias', undefined, payload); toast('Categoría creada'); }
+    resetCatForm();
+    loadCategorias();
+  }catch(e){ toast(e.message, false); }
+});
+
+async function deleteCategoria(id){
+  if(!confirm('¿Eliminar categoría #' + id + '?')) return;
+  try{ await api('DELETE','categorias', id); toast('Categoría eliminada'); loadCategorias(); }
+  catch(e){ toast(e.message, false); }
+}
+
+/* ================= PROVEEDORES ================= */
+let proveedoresCache = [];
+const provForm = document.getElementById('form-proveedor');
+const provCancelBtn = document.getElementById('prov-cancel-btn');
+
+async function loadProveedores(){
+  try{
+    proveedoresCache = await api('GET','proveedores');
+    document.getElementById('count-proveedores').textContent = proveedoresCache.length + ' registro(s)';
+    const tbody = document.getElementById('tbody-proveedores');
+    tbody.innerHTML = proveedoresCache.length ? '' : '<tr><td colspan="5" class="empty">Sin proveedores todavía.</td></tr>';
+    proveedoresCache.forEach(p=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${p.id}</td><td>${p.nombre ?? ''}</td><td>${p.email ?? ''}</td><td>${p.telefono ?? ''}</td>
+        <td class="actions">
+          <button class="icon-btn" onclick="editProveedor(${p.id})">Editar</button>
+          <button class="icon-btn del" onclick="deleteProveedor(${p.id})">Eliminar</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    fillProveedorSelect();
+  }catch(e){ toast(e.message, false); }
+}
+
+function editProveedor(id){
+  const p = proveedoresCache.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('prov-id').value = p.id;
+  document.getElementById('prov-nombre').value = p.nombre ?? '';
+  document.getElementById('prov-email').value = p.email ?? '';
+  document.getElementById('prov-telefono').value = p.telefono ?? '';
+  document.getElementById('prov-form-title').textContent = 'Editar proveedor #' + id;
+  document.getElementById('prov-submit-btn').textContent = 'Actualizar';
+  provCancelBtn.style.display = 'inline-block';
+}
+
+function resetProvForm(){
+  provForm.reset();
+  document.getElementById('prov-id').value = '';
+  document.getElementById('prov-form-title').textContent = 'Nuevo proveedor';
+  document.getElementById('prov-submit-btn').textContent = 'Guardar';
+  provCancelBtn.style.display = 'none';
+}
+provCancelBtn.addEventListener('click', resetProvForm);
+
+provForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const id = document.getElementById('prov-id').value;
+  const payload = {
+    nombre: document.getElementById('prov-nombre').value,
+    email: document.getElementById('prov-email').value,
+    telefono: document.getElementById('prov-telefono').value
+  };
+  try{
+    if(id){ await api('PUT','proveedores', id, payload); toast('Proveedor actualizado'); }
+    else{ await api('POST','proveedores', undefined, payload); toast('Proveedor creado'); }
+    resetProvForm();
+    loadProveedores();
+  }catch(e){ toast(e.message, false); }
+});
+
+async function deleteProveedor(id){
+  if(!confirm('¿Eliminar proveedor #' + id + '?')) return;
+  try{ await api('DELETE','proveedores', id); toast('Proveedor eliminado'); loadProveedores(); }
+  catch(e){ toast(e.message, false); }
+}
+
+/* ================= PRODUCTOS ================= */
+let productosCache = [];
+const prodForm = document.getElementById('form-producto');
+const prodCancelBtn = document.getElementById('prod-cancel-btn');
+
+function fillCategoriaSelect(){
+  const sel = document.getElementById('prod-categoria');
+  const current = sel.value;
+  sel.innerHTML = categoriasCache.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+  if(current) sel.value = current;
+}
+function fillProveedorSelect(){
+  const sel = document.getElementById('prod-proveedor');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— sin proveedor —</option>' +
+    proveedoresCache.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+  sel.value = current || '';
+}
+
+async function loadProductos(){
+  try{
+    productosCache = await api('GET','productos');
+    document.getElementById('count-productos').textContent = productosCache.length + ' registro(s)';
+    const tbody = document.getElementById('tbody-productos');
+    tbody.innerHTML = productosCache.length ? '' : '<tr><td colspan="7" class="empty">Sin productos todavía.</td></tr>';
+    productosCache.forEach(p=>{
+      const catNombre = categoriasCache.find(c=>c.id===p.categoria_id)?.nombre ?? p.categoria_id;
+      const provNombre = proveedoresCache.find(v=>v.id===p.proveedor_id)?.nombre ?? p.proveedor_id;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${p.id}</td><td>${p.nombre ?? ''}</td><td>$${Number(p.precio).toFixed(2)}</td><td>${p.stock}</td>
+        <td>${catNombre}</td><td>${provNombre}</td>
+        <td class="actions">
+          <button class="icon-btn" onclick="editProducto(${p.id})">Editar</button>
+          <button class="icon-btn del" onclick="deleteProducto(${p.id})">Eliminar</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){ toast(e.message, false); }
+}
+
+function editProducto(id){
+  const p = productosCache.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('prod-id').value = p.id;
+  document.getElementById('prod-nombre').value = p.nombre ?? '';
+  document.getElementById('prod-precio').value = p.precio ?? '';
+  document.getElementById('prod-stock').value = p.stock ?? '';
+  document.getElementById('prod-categoria').value = p.categoria_id ?? '';
+  document.getElementById('prod-proveedor').value = p.proveedor_id != null ? p.proveedor_id : '';
+  document.getElementById('prod-form-title').textContent = 'Editar producto #' + id;
+  document.getElementById('prod-submit-btn').textContent = 'Actualizar';
+  prodCancelBtn.style.display = 'inline-block';
+}
+
+function resetProdForm(){
+  prodForm.reset();
+  document.getElementById('prod-id').value = '';
+  document.getElementById('prod-form-title').textContent = 'Nuevo producto';
+  document.getElementById('prod-submit-btn').textContent = 'Guardar';
+  prodCancelBtn.style.display = 'none';
+}
+prodCancelBtn.addEventListener('click', resetProdForm);
+
+prodForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const id = document.getElementById('prod-id').value;
+  const payload = {
+    nombre: document.getElementById('prod-nombre').value,
+    precio: parseFloat(document.getElementById('prod-precio').value),
+    stock: parseInt(document.getElementById('prod-stock').value, 10),
+    categoria_id: parseInt(document.getElementById('prod-categoria').value, 10),
+    proveedor_id: document.getElementById('prod-proveedor').value
+      ? parseInt(document.getElementById('prod-proveedor').value, 10)
+      : null
+  };
+  try{
+    if(id){ await api('PUT','productos', id, payload); toast('Producto actualizado'); }
+    else{ await api('POST','productos', undefined, payload); toast('Producto creado'); }
+    resetProdForm();
+    loadProductos();
+  }catch(e){ toast(e.message, false); }
+});
+
+async function deleteProducto(id){
+  if(!confirm('¿Eliminar producto #' + id + '?')) return;
+  try{ await api('DELETE','productos', id); toast('Producto eliminado'); loadProductos(); }
+  catch(e){ toast(e.message, false); }
+}
+
+/* ---------- init ---------- */
+(async function init(){
+  await checkApi();
+  await loadCategorias();
+  await loadProveedores();
+  await loadProductos();
+})();
+</script>
+</body>
+</html>
