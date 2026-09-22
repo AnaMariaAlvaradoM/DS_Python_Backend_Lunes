@@ -1,5 +1,4 @@
-from Modulo_4.Clase1.la_cosecha.app.schemas.producto_schema import ProductoCrear
-from app.schemas.categoria_schema import CategoriaCrear
+from app.schemas.producto_schema import ProductoCrear
 
 productos = []
 contador_id = 1
@@ -7,7 +6,8 @@ contador_id = 1
 def listar_productos():
     return productos;
 
-def crear_productos(datos: ProductoCrear):
+
+def crear_producto(datos: ProductoCrear):
     global contador_id
     nuevo = {
         "id": contador_id,

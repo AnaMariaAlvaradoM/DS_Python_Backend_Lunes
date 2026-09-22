@@ -10,12 +10,12 @@ def listar():
     return producto_service.listar_productos()
 
 
-@router.post("/", response_model=ProductoRespuesta, status_code=status.HTTP_201_CREATED)
+@router.post("/crear", response_model=ProductoRespuesta, status_code=status.HTTP_201_CREATED)
 def crear(datos: ProductoCrear):
     return producto_service.crear_producto(datos)
 
 
-@router.put("/{producto_id}", response_model=ProductoRespuesta)
+@router.put("/actualizar/{producto_id}", response_model=ProductoRespuesta)
 def actualizar(producto_id: int, datos: ProductoCrear):
     producto = producto_service.actualizar_producto(producto_id, datos)
     if producto is None:
