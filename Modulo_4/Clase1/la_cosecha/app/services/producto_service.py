@@ -19,3 +19,22 @@ def crear_productos(datos: ProductoCrear):
     productos.append(nuevo)
     contador_id += 1
     return nuevo
+
+def buscar_producto(producto_id: int):
+    for producto in productos:
+        if producto["id"] == producto_id:
+            return producto
+    return None
+
+def actualizar_producto(producto_id: int, datos: ProductoCrear):
+    producto = buscar_producto(producto_id)
+    if producto is None:
+        return None
+    producto["nombre"] = datos.nombre
+    producto["precio"] = datos.precio
+    producto["stock"] = datos.stock
+    producto["categoria_id"] = datos.categoria_id
+
+    return producto 
+
+
