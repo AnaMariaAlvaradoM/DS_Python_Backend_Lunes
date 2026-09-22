@@ -37,4 +37,9 @@ def actualizar_producto(producto_id: int, datos: ProductoCrear):
 
     return producto 
 
+def eliminar_producto(producto_id: int):
+    producto = buscar_producto(producto_id)
+    if producto:
+        return True
+
 
