@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Cosecha · Sistema de la tienda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --morado:#6018F0;
+    --morado-2:#5418CC;
+    --morado-3:#3C1884;
+    --tinta:#1A1A1A;
+    --lienzo:#F5F3FB;
+    --blanco:#ffffff;
+    --gris:#6b6880;
+    --gris-suave:#e7e3f5;
+    --verde:#1f9d57;
+    --verde-suave:#e5f6ec;
+    --ambar:#c77700;
+    --rojo:#c0362c;
+    --rojo-suave:#fbeae8;
+    --sombra:0 1px 2px rgba(60,24,132,.06), 0 8px 24px rgba(60,24,132,.08);
+    --radio:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    color:var(--tinta);
+    background:var(--lienzo);
+    display:flex;
+    min-height:100vh;
+  }
+  /* ---------- barra lateral ---------- */
+  .lateral{
+    width:250px;
+    background:linear-gradient(180deg,var(--morado-3),var(--morado-2));
+    color:#fff;
+    padding:28px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    position:sticky;
+    top:0;
+    height:100vh;
+  }
+  .marca{display:flex;align-items:center;gap:11px;margin-bottom:30px}
+  .marca .hoja{
+    width:42px;height:42px;border-radius:12px;
+    background:rgba(255,255,255,.14);
+    display:grid;place-items:center;font-size:22px;
+  }
+  .marca h1{font-size:19px;font-weight:800;letter-spacing:-.3px;line-height:1}
+  .marca span{font-size:12px;color:rgba(255,255,255,.7);font-weight:500}
+  .nav-item{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 14px;border-radius:11px;
+    font-size:15px;font-weight:600;color:rgba(255,255,255,.82);
+    cursor:pointer;border:none;background:transparent;width:100%;text-align:left;
+    transition:background .15s,color .15s;
+  }
+  .nav-item .ic{font-size:18px;width:22px;text-align:center}
+  .nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+  .nav-item.activo{background:#fff;color:var(--morado-3)}
+  .lateral .pie{margin-top:auto;font-size:11.5px;color:rgba(255,255,255,.55);line-height:1.5}
+  .lateral .pie b{color:rgba(255,255,255,.8);font-weight:600}
+  .usuario{
+    margin-top:14px;display:flex;align-items:center;gap:10px;
+    padding-top:16px;border-top:1px solid rgba(255,255,255,.14);
+  }
+  .usuario .avatar{
+    width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.16);
+    display:grid;place-items:center;font-weight:700;font-size:14px;
+  }
+  .usuario .datos{font-size:12.5px;line-height:1.35}
+  .usuario .datos b{display:block;font-size:13.5px}
+  .usuario .datos span{color:rgba(255,255,255,.65)}
+
+  /* ---------- área principal ---------- */
+  .principal{flex:1;padding:34px 40px;max-width:100%;overflow-x:auto}
+  .encabezado{margin-bottom:26px}
+  .encabezado h2{font-size:27px;font-weight:800;letter-spacing:-.6px}
+  .encabezado p{color:var(--gris);font-size:15px;margin-top:5px;max-width:60ch}
+  .pantalla{display:none;animation:aparece .25s ease}
+  .pantalla.visible{display:block}
+  @keyframes aparece{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ---------- tarjetas resumen ---------- */
+  .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}
+  .kpi{
+    background:var(--blanco);border-radius:var(--radio);padding:18px 20px;
+    box-shadow:var(--sombra);border:1px solid var(--gris-suave);
+  }
+  .kpi .etq{font-size:13px;color:var(--gris);font-weight:600}
+  .kpi .num{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-top:6px}
+  .kpi .num.alerta{color:var(--rojo)}
+
+  /* ---------- tabla inventario ---------- */
+  .panel{
+    background:var(--blanco);border-radius:var(--radio);
+    box-shadow:var(--sombra);border:1px solid var(--gris-suave);overflow:hidden;
+  }
+  .panel-cab{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 22px;border-bottom:1px solid var(--gris-suave);
+  }
+  .panel-cab h3{font-size:16px;font-weight:700}
+  table{width:100%;border-collapse:collapse}
+  th{
+    text-align:left;font-size:12.5px;color:var(--gris);font-weight:600;
+    padding:12px 22px;background:#faf9fe;
+  }
+  td{padding:14px 22px;font-size:14.5px;border-top:1px solid var(--gris-suave)}
+  tbody tr:hover{background:#faf9fe}
+  .prod{font-weight:600}
+  .cat{
+    font-size:12px;font-weight:600;color:var(--morado-2);
+    background:#efeafd;padding:3px 10px;border-radius:20px;
+  }
+  .precio{font-family:'JetBrains Mono',monospace;font-weight:700}
+  .stock-ok{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--verde)}
+  .stock-bajo{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--ambar)}
+  .stock-cero{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--rojo)}
+  .pin{
+    display:inline-block;font-size:11.5px;font-weight:700;
+    padding:2px 9px;border-radius:20px;margin-left:8px;
+  }
+  .pin.rojo{background:var(--rojo-suave);color:var(--rojo)}
+
+  /* ---------- pantalla nueva venta ---------- */
+  .venta-grid{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
+  .catalogo{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px}
+  .prod-card{
+    background:var(--blanco);border:1px solid var(--gris-suave);border-radius:14px;
+    padding:15px;cursor:pointer;text-align:left;transition:border-color .15s,transform .1s;
+    box-shadow:var(--sombra);
+  }
+  .prod-card:hover{border-color:var(--morado);transform:translateY(-2px)}
+  .prod-card:disabled{opacity:.45;cursor:not-allowed}
+  .prod-card .emoji{font-size:26px}
+  .prod-card .n{font-weight:600;font-size:14px;margin-top:8px;line-height:1.25}
+  .prod-card .p{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--morado-2);font-size:14px;margin-top:4px}
+  .prod-card .s{font-size:11.5px;color:var(--gris);margin-top:2px}
+
+  .ticket{
+    background:var(--blanco);border:1px solid var(--gris-suave);border-radius:var(--radio);
+    box-shadow:var(--sombra);position:sticky;top:34px;overflow:hidden;
+  }
+  .ticket-cab{padding:16px 20px;border-bottom:1px solid var(--gris-suave);display:flex;align-items:center;gap:9px}
+  .ticket-cab h3{font-size:16px;font-weight:700}
+  .ticket-cuerpo{padding:10px 20px;min-height:120px}
+  .ticket-vacio{color:var(--gris);font-size:14px;text-align:center;padding:34px 0}
+  .linea{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--gris-suave)}
+  .linea .li-n{font-size:13.5px;font-weight:600}
+  .linea .li-c{font-size:12px;color:var(--gris)}
+  .linea .li-sub{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13.5px}
+  .linea button{border:none;background:var(--rojo-suave);color:var(--rojo);border-radius:7px;width:22px;height:22px;cursor:pointer;font-weight:700;margin-left:9px}
+  .ticket-total{padding:16px 20px;border-top:2px solid var(--gris-suave);background:#faf9fe}
+  .ticket-total .fila{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;color:var(--gris)}
+  .ticket-total .fila.grande{font-size:20px;font-weight:800;color:var(--tinta);margin-bottom:0}
+  .ticket-total .fila.grande span:last-child{font-family:'JetBrains Mono',monospace;color:var(--morado-2)}
+  .btn-cobrar{
+    width:100%;margin-top:14px;padding:14px;border:none;border-radius:11px;
+    background:var(--morado);color:#fff;font-size:15px;font-weight:700;cursor:pointer;
+    font-family:inherit;transition:background .15s;
+  }
+  .btn-cobrar:hover{background:var(--morado-2)}
+  .btn-cobrar:disabled{background:var(--gris-suave);color:var(--gris);cursor:not-allowed}
+
+  /* ---------- pantalla mis ventas ---------- */
+  .venta-row-quien{display:flex;align-items:center;gap:9px}
+  .mini-avatar{width:28px;height:28px;border-radius:50%;background:#efeafd;color:var(--morado-2);display:grid;place-items:center;font-weight:700;font-size:12px}
+
+  /* ---------- aviso maqueta ---------- */
+  .aviso{
+    margin-top:22px;padding:13px 18px;border-radius:12px;
+    background:#efeafd;border:1px dashed var(--morado);
+    font-size:13px;color:var(--morado-3);display:flex;align-items:center;gap:10px;
+  }
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--tinta);color:#fff;padding:14px 22px;border-radius:12px;
+    font-size:14.5px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.25);
+    display:flex;align-items:center;gap:10px;opacity:0;transition:transform .3s,opacity .3s;z-index:50;
+  }
+  .toast.ver{transform:translateX(-50%) translateY(0);opacity:1}
+  .toast .check{background:var(--verde);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:14px}
+
+  @media(max-width:900px){
+    body{flex-direction:column}
+    .lateral{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;padding:16px}
+    .marca{margin-bottom:0;margin-right:auto}
+    .lateral .pie,.usuario{display:none}
+    .nav-item{width:auto}
+    .principal{padding:22px}
+    .resumen{grid-template-columns:1fr}
+    .venta-grid{grid-template-columns:1fr}
+    .ticket{position:static}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== BARRA LATERAL ===================== -->
+<aside class="lateral">
+  <div class="marca">
+    <div class="hoja">🌾</div>
+    <div>
+      <h1>La Cosecha</h1>
+      <span>Tienda · Zipaquirá</span>
+    </div>
+  </div>
+
+  <button class="nav-item activo" data-pantalla="inventario">
+    <span class="ic">📦</span> Inventario
+  </button>
+  <button class="nav-item" data-pantalla="venta">
+    <span class="ic">🛒</span> Nueva venta
+  </button>
+  <button class="nav-item" data-pantalla="ventas">
+    <span class="ic">🧾</span> Ventas del día
+  </button>
+
+  <div class="usuario">
+    <div class="avatar">M</div>
+    <div class="datos">
+      <b>Marta Ruiz</b>
+      <span>Administradora</span>
+    </div>
+  </div>
+
+  <div class="pie">
+    <b>Maqueta de clase</b><br>
+    Datos de ejemplo. El backend<br>se construye en el módulo.
+  </div>
+</aside>
+
+<!-- ===================== ÁREA PRINCIPAL ===================== -->
+<main class="principal">
+
+  <!-- ---------- PANTALLA: INVENTARIO ---------- -->
+  <section class="pantalla visible" id="inventario">
+    <div class="encabezado">
+      <h2>Inventario</h2>
+      <p>Lo que hay hoy en la tienda. Doña Marta cambia precios y agrega productos; las vendedoras solo consultan.</p>
+    </div>
+
+    <div class="resumen">
+      <div class="kpi">
+        <div class="etq">Productos registrados</div>
+        <div class="num">8</div>
+      </div>
+      <div class="kpi">
+        <div class="etq">Valor del inventario</div>
+        <div class="num">$486.900</div>
+      </div>
+      <div class="kpi">
+        <div class="etq">Productos agotados</div>
+        <div class="num alerta">1</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-cab">
+        <h3>Productos</h3>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th></tr>
+        </thead>
+        <tbody id="tabla-inventario"></tbody>
+      </table>
+    </div>
+
+    <div class="aviso">
+      <span>🔌</span>
+      <span>Esta lista está escrita en la página. En el sistema real saldría de <b>GET /productos</b> consultando la base de datos.</span>
+    </div>
+  </section>
+
+  <!-- ---------- PANTALLA: NUEVA VENTA ---------- -->
+  <section class="pantalla" id="venta">
+    <div class="encabezado">
+      <h2>Nueva venta</h2>
+      <p>La vendedora toca los productos que lleva el cliente. El total lo calcula el sistema, no se suma a mano.</p>
+    </div>
+
+    <div class="venta-grid">
+      <div>
+        <div class="catalogo" id="catalogo-venta"></div>
+      </div>
+
+      <div class="ticket">
+        <div class="ticket-cab"><span>🧾</span><h3>Venta actual</h3></div>
+        <div class="ticket-cuerpo" id="ticket-cuerpo">
+          <div class="ticket-vacio">Toca un producto para empezar</div>
+        </div>
+        <div class="ticket-total">
+          <div class="fila"><span>Artículos</span><span id="ticket-items">0</span></div>
+          <div class="fila grande"><span>Total</span><span id="ticket-total">$0</span></div>
+          <button class="btn-cobrar" id="btn-cobrar" disabled>Registrar venta</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="aviso">
+      <span>🧮</span>
+      <span>El total se recalcula solo con los precios reales. En el sistema real, al registrar se enviaría un <b>POST /ventas</b> que descuenta stock y guarda quién vendió.</span>
+    </div>
+  </section>
+
+  <!-- ---------- PANTALLA: VENTAS DEL DÍA ---------- -->
+  <section class="pantalla" id="ventas">
+    <div class="encabezado">
+      <h2>Ventas del día</h2>
+      <p>Historial confiable de cada venta: qué se vendió, cuánto y quién la registró.</p>
+    </div>
+
+    <div class="resumen">
+      <div class="kpi">
+        <div class="etq">Ventas de hoy</div>
+        <div class="num">5</div>
+      </div>
+      <div class="kpi">
+        <div class="etq">Total recaudado</div>
+        <div class="num">$97.400</div>
+      </div>
+      <div class="kpi">
+        <div class="etq">Vendedoras activas</div>
+        <div class="num">2</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-cab"><h3>Registro de ventas</h3></div>
+      <table>
+        <thead>
+          <tr><th>N°</th><th>Hora</th><th>Productos</th><th>Vendió</th><th>Total</th></tr>
+        </thead>
+        <tbody id="tabla-ventas"></tbody>
+      </table>
+    </div>
+
+    <div class="aviso">
+      <span>👤</span>
+      <span>Cada venta guarda quién la hizo. Eso responde el "no sé quién hizo cada venta" del correo, y saldría de <b>GET /ventas</b>.</span>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast">
+  <span class="check">✓</span>
+  <span id="toast-texto">Venta registrada</span>
+</div>
+
+<script>
+  // ---- datos quemados (la meta que el backend deberá servir de verdad) ----
+  const productos = [
+    {id:1, nombre:"Arroz 500g",        emoji:"🌾", cat:"Granos",  precio:2800,  stock:40},
+    {id:2, nombre:"Fríjol libra",      emoji:"🫘", cat:"Granos",  precio:5200,  stock:18},
+    {id:3, nombre:"Panela",            emoji:"🟫", cat:"Endulzantes", precio:3500, stock:25},
+    {id:4, nombre:"Leche litro",       emoji:"🥛", cat:"Lácteos", precio:4200,  stock:6},
+    {id:5, nombre:"Huevos x30",        emoji:"🥚", cat:"Lácteos", precio:16500, stock:9},
+    {id:6, nombre:"Café 250g",         emoji:"☕", cat:"Bebidas", precio:9800,  stock:14},
+    {id:7, nombre:"Jabón barra",       emoji:"🧼", cat:"Aseo",    precio:2600,  stock:0},
+    {id:8, nombre:"Aceite 500ml",      emoji:"🛢️", cat:"Despensa",precio:7400,  stock:11},
+  ];
+
+  const ventasDia = [
+    {n:5, hora:"11:42 a.m.", items:"Café 250g, Panela ×2", quien:"Laura",  total:16800},
+    {n:4, hora:"11:15 a.m.", items:"Huevos x30",           quien:"Marta",  total:16500},
+    {n:3, hora:"10:38 a.m.", items:"Arroz 500g ×3, Aceite",quien:"Laura",  total:15800},
+    {n:2, hora:"10:02 a.m.", items:"Leche ×2, Fríjol",     quien:"Diana",  total:13600},
+    {n:1, hora:"9:20 a.m.",  items:"Café, Panela, Arroz ×2",quien:"Diana", total:18800},
+  ];
+
+  const peso = n => "$" + n.toLocaleString("es-CO");
+
+  // ---- navegación entre pantallas ----
+  const navItems = document.querySelectorAll(".nav-item");
+  navItems.forEach(b=>{
+    b.addEventListener("click",()=>{
+      navItems.forEach(x=>x.classList.remove("activo"));
+      b.classList.add("activo");
+      document.querySelectorAll(".pantalla").forEach(p=>p.classList.remove("visible"));
+      document.getElementById(b.dataset.pantalla).classList.add("visible");
+    });
+  });
+
+  // ---- render inventario ----
+  const tInv = document.getElementById("tabla-inventario");
+  tInv.innerHTML = productos.map(p=>{
+    let clase="stock-ok", pin="";
+    if(p.stock===0){clase="stock-cero"; pin='<span class="pin rojo">Agotado</span>';}
+    else if(p.stock<=8){clase="stock-bajo";}
+    return `<tr>
+      <td class="prod">${p.emoji} ${p.nombre}${pin}</td>
+      <td><span class="cat">${p.cat}</span></td>
+      <td class="precio">${peso(p.precio)}</td>
+      <td class="${clase}">${p.stock} und</td>
+    </tr>`;
+  }).join("");
+
+  // ---- render catálogo de venta ----
+  const cat = document.getElementById("catalogo-venta");
+  cat.innerHTML = productos.map(p=>`
+    <button class="prod-card" data-id="${p.id}" ${p.stock===0?"disabled":""}>
+      <div class="emoji">${p.emoji}</div>
+      <div class="n">${p.nombre}</div>
+      <div class="p">${peso(p.precio)}</div>
+      <div class="s">${p.stock===0?"Sin stock":p.stock+" disponibles"}</div>
+    </button>
+  `).join("");
+
+  // ---- lógica del ticket (total calculado, nunca a mano) ----
+  let ticket = {};
+  const cuerpo = document.getElementById("ticket-cuerpo");
+  const elItems = document.getElementById("ticket-items");
+  const elTotal = document.getElementById("ticket-total");
+  const btnCobrar = document.getElementById("btn-cobrar");
+
+  cat.querySelectorAll(".prod-card").forEach(b=>{
+    if(b.disabled) return;
+    b.addEventListener("click",()=>{
+      const id = +b.dataset.id;
+      ticket[id] = (ticket[id]||0) + 1;
+      pintarTicket();
+    });
+  });
+
+  function quitar(id){
+    if(!ticket[id]) return;
+    ticket[id]--;
+    if(ticket[id]<=0) delete ticket[id];
+    pintarTicket();
+  }
+
+  function pintarTicket(){
+    const ids = Object.keys(ticket);
+    if(ids.length===0){
+      cuerpo.innerHTML = '<div class="ticket-vacio">Toca un producto para empezar</div>';
+      elItems.textContent = "0";
+      elTotal.textContent = "$0";
+      btnCobrar.disabled = true;
+      return;
+    }
+    let total=0, items=0;
+    cuerpo.innerHTML = ids.map(id=>{
+      const p = productos.find(x=>x.id===+id);
+      const cant = ticket[id];
+      const sub = p.precio*cant;
+      total += sub; items += cant;
+      return `<div class="linea">
+        <div>
+          <div class="li-n">${p.emoji} ${p.nombre}</div>
+          <div class="li-c">${cant} × ${peso(p.precio)}</div>
+        </div>
+        <div>
+          <span class="li-sub">${peso(sub)}</span>
+          <button onclick="quitar(${id})">−</button>
+        </div>
+      </div>`;
+    }).join("");
+    elItems.textContent = items;
+    elTotal.textContent = peso(total);
+    btnCobrar.disabled = false;
+  }
+
+  // ---- registrar venta (simulado) ----
+  const toast = document.getElementById("toast");
+  const toastTexto = document.getElementById("toast-texto");
+  btnCobrar.addEventListener("click",()=>{
+    const total = elTotal.textContent;
+    ticket = {};
+    pintarTicket();
+    toastTexto.textContent = "Venta registrada por " + total;
+    toast.classList.add("ver");
+    setTimeout(()=>toast.classList.remove("ver"), 2600);
+  });
+
+  // ---- render ventas del día ----
+  const tVen = document.getElementById("tabla-ventas");
+  tVen.innerHTML = ventasDia.map(v=>`
+    <tr>
+      <td class="precio">#${v.n}</td>
+      <td>${v.hora}</td>
+      <td>${v.items}</td>
+      <td>
+        <div class="venta-row-quien">
+          <span class="mini-avatar">${v.quien[0]}</span>${v.quien}
+        </div>
+      </td>
+      <td class="precio">${peso(v.total)}</td>
+    </tr>
+  `).join("");
+</script>
+</body>
+</html>
