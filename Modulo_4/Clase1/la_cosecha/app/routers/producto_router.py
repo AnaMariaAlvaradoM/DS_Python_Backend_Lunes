@@ -21,3 +21,10 @@ def actualizar(producto_id: int, datos: ProductoCrear):
     if producto is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return producto
+
+@router.delete("/borrar/{producto_id}")
+def eliminar(producto_id: int):
+    eliminado = producto_service.eliminar_producto(producto_id)
+    if not eliminado:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return {"mensaje": f"Producto {producto_id} eliminado correctamente"}
